@@ -10,7 +10,6 @@ import {
   variacionPct,
 } from "@/lib/estadisticas/consultas";
 
-export const dynamic = "force-dynamic";
 
 function contar(ps: { barrioId: number }[]): Map<number, number> {
   const m = new Map<number, number>();

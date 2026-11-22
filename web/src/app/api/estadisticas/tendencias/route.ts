@@ -5,7 +5,6 @@ import { claveMes, ultimosMeses } from "@/lib/geo/agregacion";
 import { FiltrosTendencias, type TendenciasRespuesta } from "@/lib/schemas";
 import { inicioMesActual, obtenerPuntos, restarMeses } from "@/lib/estadisticas/consultas";
 
-export const dynamic = "force-dynamic";
 
 // Serie mensual por categoría, solo meses completos.
 export const GET = ruta(async (req: Request) => {

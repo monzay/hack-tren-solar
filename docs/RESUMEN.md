@@ -18,8 +18,9 @@ Estado del proyecto para que cualquier integrante (persona o agente) pueda retom
 |---|---|
 | T001 Base Next.js + Prisma + Vitest + CI + ECC | ✅ Hecha: lint, typecheck, 7 tests y build en verde |
 | T003 Esquema completo (9 enums, 13 modelos) + migración inicial | ✅ Hecha: `prisma validate` y build en verde. **Falta aplicar la migración en un MySQL real** |
-| T002 Base de UI (shadcn, tokens, layout, helper de API) | 🟡 A medias, sin commit: shadcn instalado, tokens y helper `api.ts` escritos, falta layout y verificación |
-| T004 a T015 | ⬜ Pendientes (orden y dependencias en `PLAN.md` §7) |
+| T002 Base de UI | ✅ Hecha |
+| T004 a T013 y T015 | ✅ Hechas: API, pantallas, datos de demo y pitch; build de producción y prueba de punta a punta en verde |
+| T014 Deploy | ⬜ Pendiente: requiere acceso a GitHub, Vercel y Railway |
 | T016 Rol Ciudadano | ⬜ Opcional (P1) |
 
 ## Cómo levantarlo

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ShieldCheck } from "lucide-react";
 import NavegacionPrincipal from "@/components/NavegacionPrincipal";
 
@@ -16,7 +17,10 @@ export default function Encabezado() {
             <span className="hidden sm:inline"> · San Salvador de Jujuy</span>
           </span>
         </Link>
-        <NavegacionPrincipal />
+        {/* usePathname es dato de la URL: va en Suspense para no bloquear el prerender (cacheComponents) */}
+        <Suspense fallback={<div className="h-9 w-40" aria-hidden="true" />}>
+          <NavegacionPrincipal />
+        </Suspense>
       </div>
     </header>
   );

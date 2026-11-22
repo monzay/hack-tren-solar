@@ -10,7 +10,6 @@ import {
 } from "@/lib/estadisticas/consultas";
 import { evaluarRecomendaciones } from "@/lib/estadisticas/recomendaciones";
 
-export const dynamic = "force-dynamic";
 
 export const GET = ruta(async (req: Request) => {
   const filtros = leerQuery(req, FiltrosMapa);

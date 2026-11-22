@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Encabezado from "@/components/Encabezado";
+import PieUrgencias from "@/components/PieUrgencias";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,7 +27,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Encabezado />
+        <main className="flex flex-1 flex-col">{children}</main>
+        <PieUrgencias />
+        <Toaster theme="light" richColors position="top-center" />
+      </body>
     </html>
   );
 }

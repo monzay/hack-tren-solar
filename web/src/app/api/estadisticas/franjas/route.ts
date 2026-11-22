@@ -4,7 +4,6 @@ import { FRANJAS } from "@/lib/dominio";
 import { FiltrosMapa, type ConteoFranja } from "@/lib/schemas";
 import { obtenerPuntos } from "@/lib/estadisticas/consultas";
 
-export const dynamic = "force-dynamic";
 
 export const GET = ruta(async (req: Request) => {
   await requiereSesion(["CIUDADANO", "ANALISTA", "ADMIN"]);

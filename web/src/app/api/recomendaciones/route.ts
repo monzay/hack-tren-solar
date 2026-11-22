@@ -3,7 +3,6 @@ import { ruta, leerQuery } from "@/lib/http";
 import { requiereSesion } from "@/lib/auth/sesion";
 import { evaluarRecomendaciones } from "@/lib/estadisticas/recomendaciones";
 
-export const dynamic = "force-dynamic";
 
 const Query = z.object({ barrioId: z.coerce.number().int().positive().optional() });
 

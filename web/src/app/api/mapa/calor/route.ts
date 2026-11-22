@@ -3,7 +3,6 @@ import { FiltrosMapa } from "@/lib/schemas";
 import { armarCalor } from "@/lib/estadisticas/calor";
 import { obtenerPuntos } from "@/lib/estadisticas/consultas";
 
-export const dynamic = "force-dynamic";
 
 // Público. Solo centros de celda de ~100 m; nunca coordenadas exactas.
 export const GET = ruta(async (req: Request) => {
