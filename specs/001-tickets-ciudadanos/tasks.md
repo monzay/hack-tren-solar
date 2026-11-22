@@ -5,7 +5,7 @@ Cada tarea corresponde a un issue de GitHub y a una rama propia. Orden, ramas y 
 ## P0, entrega de hoy
 - [x] T001 Base Next.js: app en `web/`, Prisma 6 con MySQL 8, Vitest, `.env.example`, CI, ECC; se elimina `backend/`
 - [ ] T002 Base de UI: shadcn/ui, tokens en `globals.css`, layout con navegación, helper `fetch`
-- [ ] T003 Esquema Prisma completo (`User`, `Barrio`, `CategoriaConfig`, `Incidente`, `Ticket`, `TicketDerivacion`, `ContactoTicket`, `NotaTicket`, `HistorialEstado`, `ServicioAsistencia`, `ReglaRecomendacion`) + rate limit, y migración
+- [x] T003 Esquema Prisma completo (`User`, `Barrio`, `CategoriaConfig`, `Incidente`, `Ticket`, `TicketDerivacion`, `ContactoTicket`, `NotaTicket`, `HistorialEstado`, `ServicioAsistencia`, `ReglaRecomendacion`) + rate limit, y migración
 - [ ] T004 Auth JWT (cookie) por roles, `proxy.ts`, throttling en login, CRUD de usuarios (ADMIN)
 - [ ] T005 Tickets: `POST /api/tickets` público, reglas por categoría, declaración jurada, cifrado, derivación
 - [ ] T006 Mapa de calor agrupado (~100 m), estadísticas y recomendaciones
