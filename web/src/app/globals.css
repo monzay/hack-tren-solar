@@ -152,3 +152,7 @@
     @apply font-sans;
   }
 }
+/* Mapa base en gris claro (estilo Positron) para que resalte la capa de calor */
+.mapa-base {
+  filter: grayscale(1) brightness(1.08) contrast(0.9);
+}

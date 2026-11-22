@@ -25,10 +25,8 @@ export default function SelectorUbicacion({ punto, onElegir }: Props) {
     const el = contenedor.current;
     if (!el) return;
     const mapa = L.map(el, { center: CENTRO_SSJ, zoom: ZOOM_CIUDAD });
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: "abcd",
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(mapa);
     mapa.on("click", (e: L.LeafletMouseEvent) => onElegirRef.current(e.latlng.lat, e.latlng.lng));
