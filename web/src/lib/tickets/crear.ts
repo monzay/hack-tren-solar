@@ -1,5 +1,5 @@
 import { CATEGORIAS_ANONIMAS, organismosPorDefecto, type Organismo } from "@/lib/dominio";
-import { puntoEnPoligono } from "@/lib/geo/poligono";
+import { asignarBarrio } from "@/lib/geo/ciudad";
 import { cifrar } from "@/lib/crypto";
 import { ErrorHttp } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
@@ -29,8 +29,10 @@ export async function crearTicket(entrada: CrearTicketEntrada, ip: string): Prom
       ]
     : organismosPorDefecto(entrada.categoria);
 
-  const barrios = await prisma.barrio.findMany({ select: { id: true, poligono: true } });
-  const barrio = barrios.find((b) => puntoEnPoligono(entrada.lat, entrada.lng, b.poligono));
+  const barrios = (
+    await prisma.barrio.findMany({ select: { id: true, poligono: true, centroLat: true, centroLng: true } })
+  ).map((b) => ({ ...b, centroLat: Number(b.centroLat), centroLng: Number(b.centroLng) }));
+  const barrio = asignarBarrio(entrada.lat, entrada.lng, barrios);
   if (!barrio) throw new ErrorHttp(422, "La ubicación está fuera de San Salvador de Jujuy");
 
   const contacto = modo === "CON_CONTACTO" ? entrada.contacto : undefined;

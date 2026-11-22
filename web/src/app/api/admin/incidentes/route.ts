@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requiereSesion } from "@/lib/auth/sesion";
 import { leerJson, ruta } from "@/lib/http";
-import { puntoEnPoligono } from "@/lib/geo/poligono";
+import { asignarBarrio } from "@/lib/geo/ciudad";
 import { CargaIncidentesEntrada } from "@/lib/schemas";
 
 export const GET = ruta(async () => {
@@ -30,12 +30,14 @@ export const GET = ruta(async () => {
 export const POST = ruta(async (req: Request) => {
   await requiereSesion(["ADMIN"]);
   const { incidentes } = await leerJson(req, CargaIncidentesEntrada);
-  const barrios = await prisma.barrio.findMany({ select: { id: true, poligono: true } });
+  const barrios = (
+    await prisma.barrio.findMany({ select: { id: true, poligono: true, centroLat: true, centroLng: true } })
+  ).map((b) => ({ ...b, centroLat: Number(b.centroLat), centroLng: Number(b.centroLng) }));
 
   const filas: (typeof incidentes[number] & { barrioId: number })[] = [];
   let descartados = 0;
   for (const inc of incidentes) {
-    const barrio = barrios.find((b) => puntoEnPoligono(inc.lat, inc.lng, b.poligono));
+    const barrio = asignarBarrio(inc.lat, inc.lng, barrios);
     if (!barrio) {
       descartados++;
       continue;
