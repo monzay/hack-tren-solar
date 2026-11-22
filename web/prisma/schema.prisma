@@ -1,0 +1,11 @@
+// Esquema único de la app. Los modelos de docs/PLAN.md §6.2 se agregan en T003.
+// MySQL: lat/lng como Decimal(9,6), textos largos con @db.Text, polígonos como Json.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
