@@ -30,15 +30,21 @@ export default function MapaCalor({ puntos, barrio, servicios }: Props) {
     if (!el) return;
 
     const mapa = L.map(el, { center: CENTRO_SSJ, zoom: ZOOM_CIUDAD, zoomControl: true });
-    // OpenStreetMap (sin clave). En gris por CSS (.mapa-base) para que resalte el calor.
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-      className: "mapa-base",
+    // Esri Light Gray (sin clave, gris claro como Positron) + nombres de calles encima.
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+      attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap",
+      maxZoom: 16,
+    }).addTo(mapa);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {
+      attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap",
+      maxZoom: 16,
     }).addTo(mapa);
     L.control.scale({ metric: true, imperial: false, position: "bottomleft" }).addTo(mapa);
     serviciosRef.current = L.layerGroup().addTo(mapa);
     mapaRef.current = mapa;
+    // El contenedor cambia de tamaño después de crear el mapa (layout flex): recalcular.
+    const observador = new ResizeObserver(() => mapa.invalidateSize());
+    observador.observe(el);
 
     // leaflet.heat 1.x es ESM: se usa la clase HeatLayer (ya no se engancha a L).
     // Sus tipos están escritos para Leaflet 2; en ejecución soporta 1.9 (lo detecta por L.version).
@@ -53,6 +59,7 @@ export default function MapaCalor({ puntos, barrio, servicios }: Props) {
     calorRef.current = capaCalor;
 
     return () => {
+      observador.disconnect();
       mapa.remove();
       mapaRef.current = null;
       calorRef.current = null;

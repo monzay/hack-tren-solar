@@ -25,10 +25,13 @@ export default function SelectorUbicacion({ punto, onElegir }: Props) {
     const el = contenedor.current;
     if (!el) return;
     const mapa = L.map(el, { center: CENTRO_SSJ, zoom: ZOOM_CIUDAD });
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    // Esri World Street Map (sin clave): calles con nombres para ubicar el hecho.
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+      attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap",
       maxZoom: 19,
     }).addTo(mapa);
+    const observador = new ResizeObserver(() => mapa.invalidateSize());
+    observador.observe(el);
     mapa.on("click", (e: L.LeafletMouseEvent) => onElegirRef.current(e.latlng.lat, e.latlng.lng));
     // Teclado: Enter marca el centro del mapa.
     const alTeclear = (e: KeyboardEvent) => {
@@ -40,6 +43,7 @@ export default function SelectorUbicacion({ punto, onElegir }: Props) {
     el.addEventListener("keydown", alTeclear);
     mapaRef.current = mapa;
     return () => {
+      observador.disconnect();
       el.removeEventListener("keydown", alTeclear);
       mapa.remove();
       mapaRef.current = null;
