@@ -50,6 +50,7 @@ El caso se deriva al **Ministerio de Salud** o a la **Policía** según la categ
 | 21 | Stack (22/11/2026) | **Una sola app Next.js 16 (App Router) en `web/`**, que reemplaza a NestJS (backend) y a Vite (frontend). La API son Route Handlers en `src/app/api/`. Deploy completo en Vercel; Railway queda solo para MySQL |
 | 22 | Tiempo real | **Sin Socket.IO** (Vercel no mantiene conexiones abiertas). El mapa y la bandeja de operadores vuelven a pedir datos cada `NEXT_PUBLIC_POLL_MS` (5 s), lo que cumple SC-003 (< 5 s) |
 | 23 | Flujo de agentes | **ECC** instalado a nivel proyecto **sin hooks**. Cada tarea sigue `/ecc:plan` → `tdd-workflow` → `/code-review` → verificación (ver `CLAUDE.md`). Ante cualquier diferencia, este plan y `AGENTS.md` mandan sobre las reglas de ECC |
+| 24 | Informes agénticos | Las recomendaciones con respaldo suficiente se convierten en informes para Salud o Policía, redactados por un modelo (`claude-haiku-5-5` en desarrollo) y aprobados por un ANALISTA. Se emiten **por evidencia, no por calendario** (≥ 30 hechos en 30 días, 2 semanas sostenidas, 14 días sin repetir salvo escalada). Hoy solo hay una simulación en `/informes`; diseño en [INFORMES-AGENTICOS.md](INFORMES-AGENTICOS.md) |
 
 ## 4. Riesgos
 
@@ -200,6 +201,7 @@ Cada tarea = **un issue + una rama + un PR** con CI verde (`CONTRIBUTING.md`). L
 | 6 | T014 Deploy: app en Vercel (Root Directory `web`) y MySQL en Railway | `chore/deploy` | T013 | URL pública funcionando |
 | 6 ∥ | T015 Pitch y guion de la demo | `docs/pitch` | — | guion en `docs/` |
 | P1 | T016 Rol `CIUDADANO`: registro y acceso a `/estadisticas` de toda la ciudad | `feat/ciudadano` | T013 | ve todos los barrios, solo agregados |
+| P1 | T017 Informes agénticos: modelo `Informe`, evaluación por evidencia, agente redactor, revisión y entrega (ver [INFORMES-AGENTICOS.md](INFORMES-AGENTICOS.md) §5) | `feat/informes-agenticos` | T013 | informe aprobado visible para el organismo, sin datos personales en la entrada al modelo |
 
 **Reglas para agentes (Devin, Claude Code):**
 - Leer `AGENTS.md`, este plan y la spec antes de empezar una tarea.

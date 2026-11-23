@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FUENTE_MAPA } from "@/lib/dominio";
+import { useSesion } from "@/features/auth/useSesion";
 import type {
   BarrioPublico,
   ConteoFranja,
@@ -39,6 +41,8 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
 
 export default function PantallaEstadisticas() {
   const [barrio, setBarrio] = useState(TODA);
+  const { usuario } = useSesion();
+  const veInformes = usuario?.role === "ANALISTA" || usuario?.role === "ADMIN";
   const q = barrio === TODA ? "" : `barrioId=${barrio}`;
 
   const barrios = useConsulta<BarrioPublico[]>("/barrios", SIG);
@@ -112,6 +116,14 @@ export default function PantallaEstadisticas() {
       <Seccion titulo="Recomendaciones">
         <PanelEstado cargando={recs.cargando && !recs.datos} error={recs.error} alto="h-24" />
         {recs.datos && <Recomendaciones datos={recs.datos} />}
+        {veInformes && (
+          <Link
+            href="/informes"
+            className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Ver informes para entidades (simulación)
+          </Link>
+        )}
       </Seccion>
     </div>
   );
