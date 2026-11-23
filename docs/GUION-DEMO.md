@@ -37,7 +37,7 @@ Antes de empezar: `npm run seed` hecho, la app abierta en el celular (o en modo 
 | 7 | `/estadisticas` | Entrar como `analista@demo.ar`: tendencias, ranking de barrios, franjas | "Para quien diseña políticas: dónde, cuándo y qué está creciendo." |
 | 8 | `/admin` | Entrar como `admin@demo.ar`: categorías (anonimato y derivación configurables) | "Todo es configurable por el Estado, sin tocar código." |
 
-Usuarios demo (contraseña `demo1234`): `admin@demo.ar`, `salud@demo.ar`, `policia@demo.ar`, `analista@demo.ar`, `ciudadano@demo.ar`.
+Usuarios demo (contraseña `demo1234`): `salud@demo.ar`, `policia@demo.ar`, `analista@demo.ar`, `ciudadano@demo.ar`. En local, `admin@demo.ar` usa la misma; en el deploy público tiene una propia (`SEED_ADMIN_PASSWORD`) que no se publica.
 
 ## Preguntas probables del jurado
 

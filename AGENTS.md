@@ -86,8 +86,10 @@ App y API en `http://localhost:3000` (API bajo `/api`).
 | `JWT_SECRET` | cadena larga aleatoria |
 | `JWT_EXPIRES_IN` | `8h` |
 | `ENCRYPTION_KEY` | 32 bytes en base64 (`openssl rand -base64 32`) para cifrar contactos |
-| `MIN_COUNT` | `1` |
+| `MIN_COUNT` | `1` (FR-008; en el deploy público, ver `docs/DESPLIEGUE.md`) |
 | `NEXT_PUBLIC_POLL_MS` | `5000` (refresco del mapa y la bandeja) |
+| `NEXT_PUBLIC_DEMO_PASSWORD` | contraseña pública de los usuarios demo; vacía oculta el panel de `/login` |
+| `SEED_PASSWORD`, `SEED_ADMIN_PASSWORD` | solo seed; obligatorias si la base es remota |
 
 Toda variable nueva va a `web/.env.example` y a esta tabla. Solo las que lleva el navegador empiezan con `NEXT_PUBLIC_`; nunca un secreto.
 

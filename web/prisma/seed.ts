@@ -3,6 +3,7 @@
 
 import { PrismaClient, type Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { clavesSeed } from "../src/lib/auth/claves-seed";
 import { cifrar } from "../src/lib/crypto";
 import type { Categoria, EstadoTicket, Franja } from "../src/lib/dominio";
 import { BARRIOS } from "./datos/barrios";
@@ -165,6 +166,9 @@ const NOTAS = [
 ];
 
 async function main() {
+  // Antes de borrar nada: si falta una contraseña, se corta acá.
+  const claves = clavesSeed(process.env);
+
   console.log("Limpiando datos previos...");
   await limpiar();
 
@@ -202,7 +206,8 @@ async function main() {
   await prisma.reglaRecomendacion.createMany({ data: REGLAS });
 
   // Usuarios
-  const hash = await bcrypt.hash(process.env.SEED_PASSWORD ?? "demo1234", 10);
+  const hash = await bcrypt.hash(claves.demo, 10);
+  const hashAdmin = await bcrypt.hash(claves.admin, 10);
   const demo: { email: string; nombre: string; role: Prisma.UserCreateManyInput["role"]; organismo?: "SALUD" | "POLICIA" }[] = [
     { email: "admin@demo.ar", nombre: "Admin Demo", role: "ADMIN" },
     { email: "salud@demo.ar", nombre: "Operador Salud Demo", role: "OPERADOR_SALUD", organismo: "SALUD" },
@@ -210,7 +215,9 @@ async function main() {
     { email: "analista@demo.ar", nombre: "Analista Demo", role: "ANALISTA" },
     { email: "ciudadano@demo.ar", nombre: "Ciudadano Demo", role: "CIUDADANO" },
   ];
-  await prisma.user.createMany({ data: demo.map((u) => ({ ...u, passwordHash: hash })) });
+  await prisma.user.createMany({
+    data: demo.map((u) => ({ ...u, passwordHash: u.role === "ADMIN" ? hashAdmin : hash })),
+  });
   const usuarios = await prisma.user.findMany();
   const uPorEmail = new Map(usuarios.map((u) => [u.email, u]));
 

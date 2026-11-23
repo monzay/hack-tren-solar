@@ -12,8 +12,10 @@ import { ApiError, apiFetch } from "@/lib/api";
 import { LoginEntrada, type UsuarioSesion } from "@/lib/schemas";
 import { destinoPorRol, siguienteSeguro } from "./destinoPorRol";
 
+// Contraseña pública de los usuarios demo; sin ella no se muestra el panel. El admin no se publica.
+const CLAVE_DEMO = process.env.NEXT_PUBLIC_DEMO_PASSWORD;
+
 const USUARIOS_DEMO = [
-  { email: "admin@demo.ar", rol: "Administrador" },
   { email: "salud@demo.ar", rol: "Operador de Salud" },
   { email: "policia@demo.ar", rol: "Operador de Policía" },
   { email: "analista@demo.ar", rol: "Analista" },
@@ -78,29 +80,31 @@ export function FormularioLogin() {
         </Button>
       </form>
 
-      <aside className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
-        <p className="mb-1 font-medium text-foreground">Usuarios de demostración</p>
-        <p className="mb-2">
-          Contraseña: <code>demo1234</code>
-        </p>
-        <ul className="space-y-1">
-          {USUARIOS_DEMO.map((u) => (
-            <li key={u.email}>
-              <button
-                type="button"
-                className="text-left underline-offset-2 hover:underline focus-visible:underline"
-                onClick={() => {
-                  setValue("email", u.email);
-                  setValue("password", "demo1234");
-                }}
-              >
-                {u.email}
-              </button>{" "}
-              <span>({u.rol})</span>
-            </li>
-          ))}
-        </ul>
-      </aside>
+      {CLAVE_DEMO && (
+        <aside className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+          <p className="mb-1 font-medium text-foreground">Usuarios de demostración</p>
+          <p className="mb-2">
+            Contraseña: <code>{CLAVE_DEMO}</code>
+          </p>
+          <ul className="space-y-1">
+            {USUARIOS_DEMO.map((u) => (
+              <li key={u.email}>
+                <button
+                  type="button"
+                  className="text-left underline-offset-2 hover:underline focus-visible:underline"
+                  onClick={() => {
+                    setValue("email", u.email);
+                    setValue("password", CLAVE_DEMO);
+                  }}
+                >
+                  {u.email}
+                </button>{" "}
+                <span>({u.rol})</span>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )}
     </div>
   );
 }
