@@ -1,7 +1,7 @@
 # Plan del proyecto: inteligencia territorial y reportes ciudadanos (Jujuy)
 
 > Entrega: **hoy (22/11/2026)**. Sin requisitos formales del jurado.
-> Herramientas: **Spec Kit** (`.specify/` + `specs/`) para especificar y **GitHub Issues** para el seguimiento.
+> Herramientas: **Spec Kit** (`.specify/` + `specs/`) para especificar, **GitHub Issues** para el seguimiento y **ECC** (plugin `ecc@ecc`) como flujo de trabajo de los agentes (§8).
 > Especificación detallada: [`specs/001-tickets-ciudadanos/spec.md`](../specs/001-tickets-ciudadanos/spec.md) · Tareas: [`tasks.md`](../specs/001-tickets-ciudadanos/tasks.md).
 > Este documento es la **fuente de verdad para orquestar el código** (personas y agentes: Devin, Claude Code).
 
@@ -18,8 +18,8 @@ El caso se deriva al **Ministerio de Salud** o a la **Policía** según la categ
 | Pieza | Estado | Qué hacemos |
 |---|---|---|
 | Documentación, `AGENTS.md`, reglas de merge, CI | En `main` | Se mantiene; se actualiza a MySQL |
-| Backend NestJS + Prisma + PostgreSQL (PR #2) | En `main` | **Se reemplaza por completo** (fase 0). Se pueden reutilizar las funciones puras de `backend/src/incidentes/agregacion.ts` y sus tests |
-| Ramas locales `fix/backend-review-findings` y `feat/frontend-react-vite` | Sin PR | **Se descartan.** Sus arreglos (rate limit en login, límite de body, CORS múltiple, resta de meses) pasan como requisitos de la reescritura |
+| Backend NestJS + Prisma + PostgreSQL (PR #2) | Eliminado | **Reemplazado por la app Next.js de `web/`** (decisión 21). Las funciones puras de agregación y sus tests ya están en `web/src/lib/geo/` |
+| Ramas locales `fix/backend-review-findings` y `feat/frontend-react-vite` | Sin PR | **Se descartan.** Sus arreglos (rate limit en login, límite de body, resta de meses) pasan como requisitos de la reescritura |
 | Tickets, operadores, mapa KDE, admin | No existe | Este plan |
 
 ## 3. Decisiones tomadas
@@ -47,6 +47,9 @@ El caso se deriva al **Ministerio de Salud** o a la **Policía** según la categ
 | 18 | Mapa | **Una sola capa** (oficial + ciudadano, mismo peso), estilo **densidad continua (KDE)** como la referencia de la UANL. Los reportes entran directo, sin validación |
 | 19 | Umbral mínimo | Sin mínimo (`MIN_COUNT=1`, configurable; ver R1) |
 | 20 | Retención | Borrado lógico; borrado físico si la persona pide la supresión |
+| 21 | Stack (22/11/2026) | **Una sola app Next.js 16 (App Router) en `web/`**, que reemplaza a NestJS (backend) y a Vite (frontend). La API son Route Handlers en `src/app/api/`. Deploy completo en Vercel; Railway queda solo para MySQL |
+| 22 | Tiempo real | **Sin Socket.IO** (Vercel no mantiene conexiones abiertas). El mapa y la bandeja de operadores vuelven a pedir datos cada `NEXT_PUBLIC_POLL_MS` (5 s), lo que cumple SC-003 (< 5 s) |
+| 23 | Flujo de agentes | **ECC** instalado a nivel proyecto **sin hooks**. Cada tarea sigue `/ecc:plan` → `tdd-workflow` → `/code-review` → verificación (ver `CLAUDE.md`). Ante cualquier diferencia, este plan y `AGENTS.md` mandan sobre las reglas de ECC |
 
 ## 4. Riesgos
 
@@ -70,17 +73,29 @@ El caso se deriva al **Ministerio de Salud** o a la **Policía** según la categ
 
 | Capa | Tecnología |
 |---|---|
-| Frontend | React 18 + TypeScript + Vite, Tailwind v3 + `figma.css`, shadcn/ui (Radix), React Router v6, React-Leaflet 4 + `leaflet.heat`, Recharts, React Hook Form + Zod, Axios, socket.io-client, Lucide, Sonner |
-| Backend | NestJS 10 + TypeScript, **Prisma 5 + MySQL 8**, JWT + Passport, bcrypt, `@nestjs/throttler`, Socket.IO, Swagger, class-validator |
-| Infra | Docker (`mysql:8`) en local, Railway (backend + MySQL), Vercel (frontend), GitHub Actions |
+| App (`web/`) | **Next.js 16** (App Router, Turbopack) + **React 19** + TypeScript estricto |
+| UI | Tailwind CSS v4 + tokens en `src/app/globals.css` (`@theme`), shadcn/ui (Radix), Lucide, Sonner |
+| Mapa y gráficos | React-Leaflet 5 + `leaflet.heat` (solo en el cliente), Recharts |
+| Formularios y validación | React Hook Form + **Zod** (los mismos esquemas validan el formulario y el Route Handler) |
+| API | Route Handlers en `src/app/api/**/route.ts`, prefijo `/api` |
+| Datos | **Prisma 6 + MySQL 8** |
+| Auth | JWT firmado con `jose` en cookie httpOnly, contraseñas con `bcryptjs`, `src/proxy.ts` para redirecciones optimistas y verificación de rol en cada Route Handler |
+| Tests | Vitest (unitarios e integración), Playwright (E2E de pantallas) |
+| Infra | Docker (`mysql:8`) en local, **Vercel** (app completa), **Railway** (solo MySQL), GitHub Actions |
 
 **MySQL con Prisma, a tener en cuenta:**
 - `datasource db { provider = "mysql" }` y `DATABASE_URL="mysql://root:root@localhost:3306/jujuy"`.
 - Local: `docker run -d --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=jujuy mysql:8`.
 - `prisma migrate dev` necesita una *shadow database*: usar el usuario root en local.
-- Prisma no soporta tipos espaciales en MySQL: lat/lng como `Decimal(9,6)` y la agregación se calcula en el servicio, no en SQL.
+- Prisma no soporta tipos espaciales en MySQL: lat/lng como `Decimal(9,6)` y la agregación se calcula en `src/lib/geo`, no en SQL.
 - Textos largos con `@db.Text`; polígonos de barrios como `Json` (GeoJSON).
-- CI: servicio `mysql:8` en GitHub Actions para `prisma migrate deploy` y los tests e2e.
+- Prisma se queda en la versión 6: la 7 exige adaptadores de driver y `prisma.config.ts`, más trabajo sin beneficio para la entrega.
+- CI: hoy solo valida el esquema; cuando haya tests contra la base, agregar el servicio `mysql:8`.
+
+**Next.js 16, a tener en cuenta:**
+- Leer `web/node_modules/next/dist/docs/` antes de usar una API: hay cambios respecto de versiones anteriores (por ejemplo, `middleware.ts` ahora se llama `proxy.ts`).
+- `cacheComponents` está activado: los datos por pedido (cookies, base de datos) van dentro de `<Suspense>` o en Route Handlers.
+- Leaflet usa `window`: los componentes de mapa llevan `"use client"` y se cargan con `next/dynamic` y `ssr: false`.
 
 ### 6.2 Modelo de datos (borrador para `schema.prisma`)
 
@@ -102,10 +117,10 @@ El caso se deriva al **Ministerio de Salud** o a la **Policía** según la categ
 
 1. Valida con `CategoriaConfig`: si la categoría exige contacto, rechaza sin nombre, contacto y declaración jurada.
 2. Valida que la ubicación esté dentro del ejido de San Salvador de Jujuy y asigna el `barrioId` (punto en polígono); fuera de la ciudad se rechaza con 422.
-3. Rate limit de 5 tickets por IP por hora.
+3. Rate limit de 5 tickets por IP por hora (contador guardado en MySQL, porque las funciones de Vercel no comparten memoria).
 4. Si `quiereDenunciar`, el modo pasa a `CON_CONTACTO`.
-5. Cifra el contacto, crea las derivaciones según la categoría y emite `ticket:nuevo` por Socket.IO **solo** a la sala del organismo, sin datos personales.
-6. Emite `mapa:actualizado` (conteo + timestamp) a todos.
+5. Cifra el contacto y crea las derivaciones según la categoría. La bandeja del organismo lo muestra en el siguiente refresco (polling, decisión 22).
+6. El mapa lo incluye en su siguiente refresco.
 7. Respuesta: confirmación y recursos de urgencia (911, 144, 102). Sin código de seguimiento.
 
 ### 6.4 Operadores
@@ -125,7 +140,7 @@ El caso se deriva al **Ministerio de Salud** o a la **Policía** según la categ
 - **Puntos:** solo `ServicioAsistencia` (comisarías, centros de salud, CAV). Sin marcadores de hechos.
 - **Filtros:** categoría, período, franja horaria y fuente.
 - **Panel lateral:** conteo, tasa por 1.000 habitantes, variación porcentual contra el período anterior y recomendaciones situacionales del barrio.
-- **Tiempo real:** al recibir `mapa:actualizado`, se vuelve a pedir la capa.
+- **Tiempo real:** la capa se vuelve a pedir cada `NEXT_PUBLIC_POLL_MS` (5 s) mientras la pestaña está visible.
 
 ### 6.6 Estadísticas (`CIUDADANO`, `ANALISTA`, `ADMIN`)
 
@@ -150,7 +165,7 @@ CRUD de `User` (crea operadores y analistas), `Barrio`, `CategoriaConfig`, `Serv
 
 ### 6.9 Seguridad transversal
 
-Login con throttling (5 intentos/min), CORS con varios orígenes (`CORS_ORIGIN` separado por comas, también en Socket.IO), `ENCRYPTION_KEY` de 32 bytes en una variable de entorno, Swagger en `/api/docs`, nunca loguear datos de contacto.
+Login con throttling (5 intentos/min, contador en MySQL), sesión en cookie httpOnly + `SameSite=Lax` (la app y la API comparten origen, no hace falta CORS), `ENCRYPTION_KEY` de 32 bytes en una variable de entorno, cada Route Handler valida su entrada con Zod y verifica el rol, nunca loguear datos de contacto. Sin Swagger: los esquemas Zod de `src/lib/schemas/` son el contrato de la API.
 
 ### 6.10 Pantallas (frontend)
 
@@ -165,32 +180,33 @@ Login con throttling (5 intentos/min), CORS con varios orígenes (`CORS_ORIGIN` 
 
 ## 7. Orquestación del código
 
-Cada tarea = **un issue + una rama + un PR** con CI verde (`CONTRIBUTING.md`). Las fases se hacen en orden; dentro de cada fase, las tareas marcadas ∥ pueden correr en paralelo (por ejemplo, una persona con Claude Code en el frontend y otra en el backend).
+Cada tarea = **un issue + una rama + un PR** con CI verde (`CONTRIBUTING.md`). Las fases se hacen en orden; dentro de cada fase, las tareas marcadas ∥ pueden correr en paralelo (por ejemplo, una persona con Claude Code en las pantallas y otra en la API). Todo vive en `web/`: "API" son Route Handlers en `src/app/api/` y "pantallas" son páginas en `src/app/`.
 
 | Fase | Tarea | Rama | Depende de | Hecho cuando |
 |---|---|---|---|---|
-| 0 | T001 Reset del backend: NestJS limpio, Prisma con MySQL, Docker, `.env.example`, CI con servicio MySQL (hoy `ci.yml` usa una URL de PostgreSQL) | `chore/reset-backend-mysql` | — | `prisma validate`, lint, build y test en verde |
-| 0 ∥ | T002 Base del frontend: Vite + Tailwind + `figma.css` + shadcn/ui, router, layout, cliente Axios | `feat/frontend-base` | — | lint, typecheck y build en verde |
-| 1 | T003 Esquema Prisma completo (§6.2) y primera migración | `feat/prisma-schema` | T001 | `migrate dev` aplica en MySQL limpio |
-| 2 | T004 Auth JWT por roles, throttling, CRUD de usuarios (ADMIN) | `feat/auth-roles` | T003 | tests de guardas por rol |
-| 2 ∥ | T005 Tickets: alta pública, reglas por categoría, cifrado, derivación, Socket.IO | `feat/tickets` | T003 | tests de validación por categoría y derivación |
+| 0 | T001 Base Next.js: app en `web/`, Prisma 6 con MySQL, Vitest, `.env.example`, CI, ECC; se elimina `backend/` | `chore/stack-nextjs` | — | `prisma validate`, lint, typecheck, test y build en verde |
+| 0 ∥ | T002 Base de UI: shadcn/ui, tokens de diseño en `globals.css`, layout con navegación, helper `fetch` para la API | `feat/ui-base` | T001 | lint, typecheck y build en verde |
+| 1 | T003 Esquema Prisma completo (§6.2) + tabla de rate limit, y primera migración | `feat/prisma-schema` | T001 | `migrate dev` aplica en MySQL limpio |
+| 2 | T004 Auth JWT (cookie) por roles, `proxy.ts`, throttling, CRUD de usuarios (ADMIN) | `feat/auth-roles` | T003 | tests de acceso por rol |
+| 2 ∥ | T005 Tickets: alta pública, reglas por categoría, cifrado, derivación | `feat/tickets` | T003 | tests de validación por categoría y derivación |
 | 2 ∥ | T006 Mapa de calor, estadísticas y recomendaciones (§6.5 y §6.6) | `feat/mapa-estadisticas` | T003 | tests de agrupación (~100 m, sin coordenadas exactas) |
-| 3 | T007 Endpoints de operador: bandeja, estados, notas, auditoría | `feat/operador` | T004, T005 | tests de transiciones y de acceso por organismo |
-| 3 ∥ | T008 Endpoints de admin: barrios, categorías, servicios, reglas, carga masiva, supresión | `feat/admin-api` | T004 | tests e2e por rol |
-| 4 ∥ | T009 Pantalla de mapa KDE, leyenda, filtros, panel lateral, tiempo real | `feat/front-mapa` | T002, T006 | se ve como la referencia, con datos de prueba |
+| 3 | T007 API de operador: bandeja, estados, notas, auditoría | `feat/operador` | T004, T005 | tests de transiciones y de acceso por organismo |
+| 3 ∥ | T008 API de admin: barrios, categorías, servicios, reglas, carga masiva, supresión | `feat/admin-api` | T004 | tests de integración por rol |
+| 4 ∥ | T009 Pantalla de mapa KDE, leyenda, filtros, panel lateral, refresco cada 5 s | `feat/front-mapa` | T002, T006 | se ve como la referencia, con datos de prueba |
 | 4 ∥ | T010 Formulario público por pasos | `feat/front-reportar` | T002, T005 | crea tickets anónimos y con contacto |
 | 4 ∥ | T011 Panel de operador | `feat/front-operador` | T002, T007 | cambia estados y agrega notas |
 | 4 ∥ | T012 Estadísticas y panel admin | `feat/front-admin` | T002, T006, T008 | CRUD completo desde la UI |
 | 5 | T013 **Precarga de datos ficticios**: barrios con polígonos, incidentes, tickets, servicios, reglas, usuarios demo | `feat/seed-demo` | todas las anteriores | `npm run seed` deja la demo lista |
-| 6 | T014 Deploy en Railway (MySQL) y Vercel | `chore/deploy` | T013 | URLs públicas funcionando |
+| 6 | T014 Deploy: app en Vercel (Root Directory `web`) y MySQL en Railway | `chore/deploy` | T013 | URL pública funcionando |
 | 6 ∥ | T015 Pitch y guion de la demo | `docs/pitch` | — | guion en `docs/` |
 | P1 | T016 Rol `CIUDADANO`: registro y acceso a `/estadisticas` de toda la ciudad | `feat/ciudadano` | T013 | ve todos los barrios, solo agregados |
 
 **Reglas para agentes (Devin, Claude Code):**
 - Leer `AGENTS.md`, este plan y la spec antes de empezar una tarea.
+- Con Claude Code, seguir el flujo ECC de `CLAUDE.md` (`/ecc:plan` → `tdd-workflow` → `/code-review` → verificación).
 - No crear datos de demo antes de T013; los tests usan fixtures.
 - No agregar nada de empresas de seguridad.
-- Nunca enviar coordenadas exactas ni datos de contacto a endpoints públicos o eventos de Socket.IO.
+- Nunca enviar coordenadas exactas ni datos de contacto a endpoints públicos.
 - Si una decisión de este plan no alcanza, preguntar antes de inventar.
 
 ## 8. Herramientas UX/UI para Claude Code
@@ -199,10 +215,11 @@ Se instalan en la máquina de quien ejecuta Claude Code. Si el marketplace ofici
 
 | Herramienta | Para qué | Instalación |
 |---|---|---|
+| **ECC** (`ecc@ecc`) | Flujo plan → tests → revisión → verificación, con agentes y skills | Ya declarado en `.claude/settings.json`; cada persona corre una vez `npx ecc-universal@2.2.3 install --guided --harness claude --claude-scope project --claude-hooks off --yes` (ver `CLAUDE.md`) |
 | Plugin `frontend-design` (oficial de Anthropic) | Interfaces cuidadas, sin estética genérica | `/plugin install frontend-design@claude-plugins-official` |
 | Plugin `playwright` (Microsoft) | Que Claude abra la app, saque capturas y verifique la UI | `/plugin install playwright@claude-plugins-official` |
 | Plugin `figma` | Leer diseños y tokens desde Figma | `/plugin install figma@claude-plugins-official` |
-| MCP de shadcn/ui | Buscar y agregar componentes del registro | `npx shadcn@latest mcp init --client claude` |
+| MCP de shadcn/ui | Buscar y agregar componentes del registro | `npx shadcn@latest mcp init --client claude` (dentro de `web/`) |
 
 Librerías del proyecto (§6.1): shadcn/ui, Radix, Recharts, React Hook Form + Zod, Sonner, `leaflet.heat`, Lucide.
 
