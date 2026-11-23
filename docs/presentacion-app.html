@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa del delito · San Salvador de Jujuy · Pitch</title>
+<style>
+/* Paleta tomada de web/src/app/globals.css (tema claro de la app) */
+:root{
+  --background:#ffffff; --foreground:#0a0a0a;
+  --primary:#1f5f7a; --primary-foreground:#f7fbfd; --ring:#4f8aa3;
+  --muted:#f5f5f5; --muted-foreground:#595959; --border:#e5e5e5; --accent:#f5f5f5;
+  --destructive:#e7000b; --radius:10px;
+  --heat-1:#2e9e4f;--heat-2:#6cb64a;--heat-3:#a5c640;--heat-4:#d6cf3a;--heat-5:#f2c230;
+  --heat-6:#f5a02a;--heat-7:#f27a26;--heat-8:#e9541f;--heat-9:#d9341d;--heat-10:#b81c1c;
+  --ramp:linear-gradient(90deg,var(--heat-1),var(--heat-3),var(--heat-5),var(--heat-7),var(--heat-9),var(--heat-10));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#dfe6ea;color:var(--foreground);
+  font-family:Geist,"Geist Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.stage{position:fixed;inset:0;overflow:hidden}
+.deck{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0}
+.slide{position:absolute;inset:0;background:var(--background);overflow:hidden;display:flex;flex-direction:column;
+  opacity:0;transform:translateX(30px);transition:opacity .4s ease,transform .4s ease;pointer-events:none}
+.slide.active{opacity:1;transform:none;pointer-events:auto}
+.slide.prev{transform:translateX(-30px)}
+/* encabezado igual al de la app */
+.hdr{height:64px;flex:none;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 40px;background:rgba(255,255,255,.95)}
+.logo{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--primary);font-size:16px}
+.logo svg{width:24px;height:24px}
+.sim{font-size:12px;font-weight:600;color:#8a5a00;background:#fff6db;border:1px solid #f2d78a;border-radius:999px;padding:4px 10px;margin-left:12px}
+.body{flex:1;padding:24px 72px 64px;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--primary);margin-bottom:12px}
+h1{font-size:60px;line-height:1.04;font-weight:700;letter-spacing:-.025em}
+h2{font-size:40px;line-height:1.1;font-weight:700;letter-spacing:-.02em;margin-bottom:28px}
+.lead{font-size:20px;line-height:1.5;color:var(--muted-foreground)}
+.hl{color:var(--primary)}
+.hot{background:var(--ramp);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{border:1px solid var(--border);border-radius:var(--radius);background:#fff;padding:22px}
+.card h3{font-size:19px;font-weight:600;margin:12px 0 6px}
+.card p{font-size:15px;line-height:1.5;color:var(--muted-foreground)}
+.ico{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;background:#e8f1f5;color:var(--primary)}
+.ico svg{width:22px;height:22px}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:999px;padding:3px 10px;background:#fff}
+.dot{width:8px;height:8px;border-radius:50%}
+/* mapa simulado */
+.map{position:relative;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#eef1ee}
+.map .streets{position:absolute;inset:0;background:
+  repeating-linear-gradient(28deg,transparent 0 46px,#fff 46px 50px),
+  repeating-linear-gradient(118deg,transparent 0 58px,#fff 58px 62px),#e9ece7}
+.map .river{position:absolute;left:-10%;right:-10%;top:58%;height:22px;background:#b9d5e6;transform:rotate(-12deg)}
+.map .heat{position:absolute;inset:0;filter:blur(18px);opacity:.82}
+.map .heat i{position:absolute;border-radius:50%}
+.map .ov{position:absolute;z-index:2;background:rgba(255,255,255,.95);border:1px solid var(--border);border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.06);font-size:11px}
+.legend{padding:7px 8px}
+.legend p{font-weight:600;margin-bottom:4px}
+.legend .r{display:flex}.legend .r span{width:14px;height:10px}
+.legend .l{display:flex;justify-content:space-between;color:var(--muted-foreground);margin-top:2px}
+.north{width:34px;height:34px;display:grid;place-items:center;font-weight:700;font-size:12px}
+.src{padding:4px 8px}
+.panel{border-right:1px solid var(--border);padding:16px;background:#fff;font-size:12px}
+.panel h4{font-size:15px;font-weight:600;margin-bottom:10px}
+.sel{border:1px solid var(--border);border-radius:8px;padding:7px 9px;margin-bottom:8px;display:flex;justify-content:space-between;color:var(--foreground)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0;text-align:center}
+.kpis div{border:1px solid var(--border);border-radius:8px;padding:6px}
+.kpis small{display:block;color:var(--muted-foreground);font-size:10px}
+.kpis b{font-size:16px}
+.rec{border:1px solid var(--border);background:#fafafa;border-radius:8px;padding:8px;line-height:1.4}
+.rec em{display:block;font-style:normal;color:var(--muted-foreground);font-size:10px;margin-top:3px}
+/* cifras */
+.num{font-size:46px;font-weight:700;letter-spacing:-.02em;color:var(--primary);line-height:1}
+.numl{font-size:14px;color:var(--muted-foreground);margin-top:6px}
+.note{font-size:12px;color:var(--muted-foreground);margin-top:auto;padding:14px 0}
+/* flujo */
+.flow{display:grid;grid-template-columns:1fr 36px 1fr 36px 1fr;align-items:stretch}
+.arrow{display:grid;place-items:center;color:var(--ring)}
+.arrow svg{width:26px;height:26px}
+.step{font-size:12px;font-weight:600;color:var(--primary);letter-spacing:.08em;text-transform:uppercase}
+.mini{margin-top:14px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--muted);font-size:12px;display:grid;gap:6px}
+.mini .row{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 8px}
+.st{font-size:10px;font-weight:600;border-radius:999px;padding:2px 8px}
+.st.n{background:#e8f1f5;color:var(--primary)}.st.c{background:#fff3d6;color:#8a5a00}.st.d{background:#e7f5ea;color:#1d6b35}
+.prog{display:flex;gap:4px}.prog span{flex:1;height:5px;border-radius:3px;background:var(--border)}.prog span.on{background:var(--primary)}
+/* tabla */
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--border)}
+th{font-size:12px;color:var(--muted-foreground);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+td:first-child{font-weight:600}
+.yes{color:#1d6b35;font-weight:600}.no{color:var(--muted-foreground)}
+/* modelo */
+.price{font-size:13px;font-weight:600;color:var(--primary);margin-top:10px}
+.cta-box{background:var(--primary);color:var(--primary-foreground);border-radius:var(--radius);padding:26px 28px}
+.cta-box h3{font-size:24px;font-weight:700;line-height:1.25}
+.cta-box p{color:#cfe3ec;font-size:15px;margin-top:8px;line-height:1.5}
+.ramp{height:8px;border-radius:4px;background:var(--ramp)}
+/* informes agénticos */
+.agent{display:grid;grid-template-columns:1fr 36px 1.15fr 36px 1.25fr;align-items:stretch}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;background:#e8f1f5;color:var(--primary);margin:2px 4px 2px 0}
+.chip.off{background:#fdecec;color:var(--heat-10);text-decoration:line-through}
+.doc{border:1px solid var(--border);border-radius:8px;background:#fff;padding:10px 12px;font-size:12px;line-height:1.45}
+.doc b{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground);margin-top:6px}
+.doc b:first-child{margin-top:0}
+.tabs{display:flex;gap:4px;margin-bottom:6px}.tabs span{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:#fff}
+.tabs span.on{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.guard{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+.guard div{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.4;color:var(--muted-foreground)}
+.guard strong{display:block;color:var(--foreground);font-size:14px}
+/* controles */
+.ctrl{position:fixed;right:18px;bottom:16px;display:flex;align-items:center;gap:8px;z-index:10;font-size:13px;color:var(--muted-foreground)}
+.ctrl button{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--foreground);cursor:pointer;font-size:16px}
+.ctrl button:hover{background:var(--accent)}
+.ctrl button:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.bar{position:fixed;left:0;top:0;height:4px;background:var(--ramp);transition:width .4s ease;z-index:10}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="mega" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+  <symbol id="chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+  <symbol id="login" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></symbol>
+  <symbol id="phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></symbol>
+  <symbol id="scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/><path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M7 21h10"/></symbol>
+  <symbol id="grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="build" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></symbol>
+  <symbol id="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.94 14.06 4 20"/><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="trend" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+</svg>
+
+<template id="hdr">
+  <header class="hdr">
+    <div class="logo"><svg><use href="#shield"/></svg>Mapa del delito · San Salvador de Jujuy<span class="sim">Simulación · datos ficticios</span></div>
+  </header>
+</template>
+
+<div class="bar" id="bar"></div>
+<div class="stage"><div class="deck" id="deck">
+
+  <!-- 1. Portada -->
+  <section class="slide">
+    <div class="body" style="flex-direction:row;gap:44px;align-items:center;padding-top:0">
+      <div style="flex:1">
+        <p class="eyebrow">Inteligencia territorial · Prevención del delito</p>
+        <h1>Sabemos dónde se <span class="hl">denuncia</span>.<br>Queremos ver dónde <span class="hot">pasa</span>.</h1>
+        <p class="lead" style="margin-top:22px">Una plataforma pública que suma estadísticas oficiales y reportes ciudadanos en un mapa de calor de San Salvador de Jujuy, y deriva cada reporte al Ministerio de Salud o a la Policía.</p>
+        <div style="display:flex;gap:8px;margin-top:24px;flex-wrap:wrap">
+          <span class="badge"><i class="dot" style="background:var(--heat-1)"></i>Reportes anónimos</span>
+          <span class="badge"><i class="dot" style="background:var(--heat-5)"></i>Derivación automática</span>
+          <span class="badge"><i class="dot" style="background:var(--heat-9)"></i>Mapa que se actualiza solo</span>
+        </div>
+      </div>
+      <div class="map" style="width:560px;height:440px;display:grid;grid-template-columns:200px 1fr">
+        <div class="panel" style="position:relative;z-index:3">
+          <h4>Mapa del delito</h4>
+          <div class="sel"><span>Todas las categorías</span><span>⌄</span></div>
+          <div class="sel"><span>Últimos 6 meses</span><span>⌄</span></div>
+          <div class="sel"><span>Barrio: Centro</span><span>⌄</span></div>
+          <div class="kpis"><div><small>Hechos</small><b>142</b></div><div><small>x 1.000</small><b>8,4</b></div><div><small>Var.</small><b style="font-size:12px">+12 %</b></div></div>
+          <div class="rec">Reforzar la iluminación en las paradas de colectivo.<em>Robo · Noche (18 a 24 h)</em></div>
+        </div>
+        <div style="position:relative">
+          <div class="streets"></div><div class="river"></div>
+          <div class="heat">
+            <i style="left:28%;top:16%;width:150px;height:150px;background:radial-gradient(circle,var(--heat-10),var(--heat-8) 35%,var(--heat-5) 62%,transparent 72%)"></i>
+            <i style="left:58%;top:48%;width:120px;height:120px;background:radial-gradient(circle,var(--heat-7),var(--heat-5) 45%,var(--heat-3) 65%,transparent 72%)"></i>
+            <i style="left:6%;top:56%;width:110px;height:110px;background:radial-gradient(circle,var(--heat-4),var(--heat-2) 50%,transparent 72%)"></i>
+            <i style="left:66%;top:6%;width:90px;height:90px;background:radial-gradient(circle,var(--heat-3),var(--heat-1) 50%,transparent 72%)"></i>
+          </div>
+          <div class="ov north" style="top:10px;right:10px">N↑</div>
+          <div class="ov legend" style="left:10px;bottom:34px"><p>Concentración</p><div class="r"><span style="background:var(--heat-1)"></span><span style="background:var(--heat-2)"></span><span style="background:var(--heat-3)"></span><span style="background:var(--heat-4)"></span><span style="background:var(--heat-5)"></span><span style="background:var(--heat-6)"></span><span style="background:var(--heat-7)"></span><span style="background:var(--heat-8)"></span><span style="background:var(--heat-9)"></span><span style="background:var(--heat-10)"></span></div><div class="l"><span>Baja</span><span>Media</span><span>Alta</span></div></div>
+          <div class="ov src" style="right:10px;bottom:6px;max-width:80%;text-align:right">Datos oficiales + reportes ciudadanos no verificados</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Problema -->
+  <section class="slide">
+    <div class="body">
+      <p class="eyebrow">El problema</p>
+      <h2>Las estadísticas muestran denuncias, no delitos.</h2>
+      <div class="grid g4">
+        <div class="card"><div class="num">2.802</div><div class="numl">hurtos registrados</div></div>
+        <div class="card"><div class="num">1.848</div><div class="numl">estafas virtuales</div></div>
+        <div class="card"><div class="num">1.818</div><div class="numl">robos</div></div>
+        <div class="card"><div class="num">13</div><div class="numl">homicidios dolosos</div></div>
+      </div>
+      <div class="grid g3" style="margin-top:18px">
+        <div class="card"><div class="ico" style="background:#fdecec;color:var(--heat-10)"><svg><use href="#eye"/></svg></div><h3>Subregistro</h3><p>Muchas víctimas no denuncian, sobre todo en abuso sexual y violencia de género.</p></div>
+        <div class="card"><div class="ico" style="background:#fff5dc;color:#b7791f"><svg><use href="#scale"/></svg></div><h3>Sesgo de patrullaje</h3><p>Donde hay más patrullaje hay más denuncias; los barrios desatendidos quedan invisibles.</p></div>
+        <div class="card"><div class="ico"><svg><use href="#grid"/></svg></div><h3>Sin detalle barrial</h3><p>Los datos abiertos llegan por departamento y por año: no alcanzan para prevenir en cada barrio.</p></div>
+      </div>
+      <p class="note">Fuente: SNIC, Ministerio de Seguridad de la Nación, 2025, departamento Dr. Manuel Belgrano (incluye San Salvador de Jujuy). El DiPEC Jujuy advierte un “importante subregistro” en las estadísticas basadas en denuncias.</p>
+    </div>
+  </section>
+
+  <!-- 3. Solución -->
+  <section class="slide">
+    <div class="body">
+      <p class="eyebrow">La solución</p>
+      <h2>Del reporte a la prevención, en tres pantallas.</h2>
+      <div class="flow">
+        <div class="card">
+          <p class="step">1 · /reportar</p><h3>Reportar</h3>
+          <p>Formulario público por pasos, sin cuenta. Anónimo en abuso y violencia; con contacto en robo, hurto, lesiones o estafa.</p>
+          <div class="mini">
+            <div class="prog"><span class="on"></span><span class="on"></span><span></span><span></span></div>
+            <div class="row"><span>Categoría</span><b>Robo</b></div>
+            <div class="row"><span>Ubicación</span><b>Barrio Centro</b></div>
+            <div class="row"><span>Modo</span><b>Con contacto</b></div>
+          </div>
+        </div>
+        <div class="arrow"><svg><use href="#arrow"/></svg></div>
+        <div class="card">
+          <p class="step">2 · /operador</p><h3>Derivar</h3>
+          <p>Cada reporte llega solo al organismo que corresponde: abuso sexual a Salud y Policía, el resto a Policía.</p>
+          <div class="mini">
+            <div class="row"><span>#1042 · Abuso sexual</span><span class="st n">Nuevo</span></div>
+            <div class="row"><span>#1039 · Robo</span><span class="st c">Contactado</span></div>
+            <div class="row"><span>#1031 · Hurto</span><span class="st d">Derivado</span></div>
+          </div>
+        </div>
+        <div class="arrow"><svg><use href="#arrow"/></svg></div>
+        <div class="card">
+          <p class="step">3 · Mapa y estadísticas</p><h3>Prevenir</h3>
+          <p>El mapa se actualiza cada pocos segundos y sugiere medidas situacionales explicadas, sin perfilar a nadie.</p>
+          <div class="mini">
+            <div class="ramp"></div>
+            <div class="row" style="display:block;line-height:1.4">Reforzar la iluminación en las paradas.<br><span style="color:var(--muted-foreground);font-size:11px">Por qué: los robos de noche subieron 20 % en el barrio.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Informes agénticos -->
+  <section class="slide">
+    <div class="body">
+      <p class="eyebrow">Plus agéntico · Informes</p>
+      <h2>Del relato del vecino al informe para cada organismo.</h2>
+      <div class="agent">
+        <div class="card">
+          <p class="step">1 · Entrada</p><h3>Reporte ciudadano</h3>
+          <p>El agente recibe el relato y datos del hecho, nunca la identidad.</p>
+          <div class="mini">
+            <div><span class="chip">Relato</span><span class="chip">Categoría</span><span class="chip">Franja</span><span class="chip">Barrio</span></div>
+            <div><span class="chip off">Nombre</span><span class="chip off">Teléfono</span><span class="chip off">Punto exacto</span></div>
+            <div class="row" style="display:block;line-height:1.4;font-style:italic">“Me sacaron el celular en la parada de la 19, a la noche, eran dos en moto…”</div>
+          </div>
+        </div>
+        <div class="arrow"><svg><use href="#arrow"/></svg></div>
+        <div class="card">
+          <p class="step">2 · Agente</p><h3>Redacta y estructura</h3>
+          <p>Un modelo de lenguaje (p. ej. Claude Sonnet) extrae los hechos, resume y arma el informe según el organismo destino.</p>
+          <div class="mini">
+            <div class="row"><span>Extraer hechos</span><span class="st d">Listo</span></div>
+            <div class="row"><span>Detectar datos faltantes</span><span class="st d">Listo</span></div>
+            <div class="row"><span>Redactar por organismo</span><span class="st c">En curso</span></div>
+            <div class="row"><span>Sugerir recursos de asistencia</span><span class="st n">Pendiente</span></div>
+          </div>
+        </div>
+        <div class="arrow"><svg><use href="#arrow"/></svg></div>
+        <div class="card">
+          <p class="step">3 · Salida</p><h3>Borrador para el operador</h3>
+          <div class="tabs" style="margin-top:10px"><span>Salud</span><span class="on">Policía</span></div>
+          <div class="doc">
+            <b>Resumen</b>Robo de celular en vía pública, dos personas en moto.
+            <b>Cuándo y dónde</b>Noche (18 a 24 h) · Barrio Centro, zona aproximada.
+            <b>Patrón en la zona</b>3.º reporte similar en 30 días.
+            <b>Falta confirmar</b>Hora exacta y si hubo lesiones.
+          </div>
+        </div>
+      </div>
+      <div class="guard">
+        <div><div class="ico" style="flex:none"><svg><use href="#check"/></svg></div><span><strong>Humano en el circuito</strong>El operador revisa y aprueba antes de derivar.</span></div>
+        <div><div class="ico" style="flex:none"><svg><use href="#lock"/></svg></div><span><strong>Sin datos personales</strong>El contacto cifrado nunca llega al modelo.</span></div>
+        <div><div class="ico" style="flex:none"><svg><use href="#scale"/></svg></div><span><strong>No juzga personas</strong>No decide culpas ni perfila: describe el hecho.</span></div>
+        <div><div class="ico" style="flex:none"><svg><use href="#spark"/></svg></div><span><strong>Trazable</strong>Cada informe guarda el modelo y la versión usados.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Privacidad -->
+  <section class="slide">
+    <div class="body">
+      <p class="eyebrow">Privacidad por diseño</p>
+      <h2>Datos sensibles, tratados como tales.</h2>
+      <div class="grid" style="grid-template-columns:1.35fr 1fr;gap:26px">
+        <div class="card" style="padding:8px 14px">
+          <table>
+            <tr><th>Rol</th><th>Mapa agregado</th><th>Tickets</th><th>Contacto</th></tr>
+            <tr><td>Público</td><td class="yes">Sí</td><td class="no">No</td><td class="no">No</td></tr>
+            <tr><td>Ciudadano con cuenta</td><td class="yes">Toda la ciudad</td><td class="no">No</td><td class="no">No</td></tr>
+            <tr><td>Operador Salud / Policía</td><td class="yes">Sí</td><td class="yes">Solo su organismo</td><td class="yes">Sí, auditado</td></tr>
+            <tr><td>Analista</td><td class="yes">Sí</td><td class="no">Agregados</td><td class="no">No</td></tr>
+            <tr><td>Admin</td><td class="yes">Sí</td><td class="yes">Gestión</td><td class="no">Supresión</td></tr>
+          </table>
+        </div>
+        <div class="grid" style="gap:12px">
+          <div class="card" style="display:flex;gap:14px;padding:16px"><div class="ico" style="flex:none"><svg><use href="#grid"/></svg></div><div><h3 style="margin:0 0 4px;font-size:16px">Agrupado cada ~100 m</h3><p>El mapa nunca muestra el punto exacto ni marcadores de hechos.</p></div></div>
+          <div class="card" style="display:flex;gap:14px;padding:16px"><div class="ico" style="flex:none"><svg><use href="#lock"/></svg></div><div><h3 style="margin:0 0 4px;font-size:16px">Contacto cifrado</h3><p>AES-256-GCM, y cada vez que un operador lo lee queda registrado.</p></div></div>
+          <div class="card" style="display:flex;gap:14px;padding:16px"><div class="ico" style="flex:none"><svg><use href="#shield"/></svg></div><div><h3 style="margin:0 0 4px;font-size:16px">Ley 25.326</h3><p>Borrado lógico por defecto; borrado físico si la persona lo pide.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Modelo de negocio -->
+  <section class="slide">
+    <div class="body">
+      <p class="eyebrow">Modelo de negocio</p>
+      <h2>Gratis para la gente, valor para el Estado.</h2>
+      <div class="grid g3">
+        <div class="card"><div class="ico"><svg><use href="#users"/></svg></div><h3>Ciudadanía</h3><p>Reportar, ver el mapa y el análisis de toda la ciudad, sin costo. Más reportes, menos subregistro.</p><p class="price">Gratis</p></div>
+        <div class="card"><div class="ico"><svg><use href="#build"/></svg></div><h3>Estado (B2G)</h3><p>Licencia de los paneles para Salud, Policía, Seguridad y Municipio: bandeja de tickets, tendencias y reportes.</p><p class="price">Cliente principal del MVP</p></div>
+        <div class="card"><div class="ico"><svg><use href="#trend"/></svg></div><h3>Escala</h3><p>Otros municipios de Jujuy y del NOA con la misma plataforma. Solo datos agregados, nunca personales.</p><p class="price">Próxima etapa</p></div>
+      </div>
+      <div class="cta-box" style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;gap:30px">
+        <div><h3>Más reportes, menos subregistro, mejor prevención.</h3><p>Pedimos un piloto con la Municipalidad y el Ministerio de Seguridad en San Salvador de Jujuy.</p></div>
+        <div style="width:220px;flex:none"><div class="ramp" style="height:12px"></div><div style="display:flex;justify-content:space-between;font-size:12px;color:#cfe3ec;margin-top:6px"><span>Baja</span><span>Media</span><span>Alta</span></div></div>
+      </div>
+    </div>
+  </section>
+
+</div></div>
+<div class="ctrl"><button id="prev" aria-label="Anterior">←</button><span id="count">1 / 6</span><button id="next" aria-label="Siguiente">→</button></div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+const hdr=document.getElementById('hdr').content;
+slides.forEach(s=>s.prepend(hdr.cloneNode(true)));
+const deck=document.getElementById('deck');
+function fit(){const k=Math.min(innerWidth/1280,innerHeight/720);deck.style.width=innerWidth/k+'px';deck.style.height=innerHeight/k+'px';deck.style.transform='scale('+k+')';}
+addEventListener('resize',fit);fit();
+let i=0;const bar=document.getElementById('bar'),count=document.getElementById('count');
+function go(n){i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((s,k)=>{s.classList.toggle('active',k===i);s.classList.toggle('prev',k<i);s.inert=k!==i;s.setAttribute('aria-hidden',k!==i)});
+  history.replaceState(null,'','#'+(i+1));bar.style.width=((i+1)/slides.length*100)+'%';count.textContent=(i+1)+' / '+slides.length;}
+document.getElementById('next').onclick=()=>go(i+1);
+document.getElementById('prev').onclick=()=>go(i-1);
+addEventListener('keydown',e=>{
+  if([' ','Enter'].includes(e.key)&&e.target.closest?.('button'))return;
+  if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();go(i+1)}
+  if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();go(i-1)}
+  if(e.key==='Home')go(0);if(e.key==='End')go(slides.length-1);
+  if(e.key==='f')document.documentElement.requestFullscreen?.();
+});
+let x0=null;addEventListener('touchstart',e=>x0=e.touches[0].clientX);
+addEventListener('touchend',e=>{if(x0===null)return;const d=e.changedTouches[0].clientX-x0;if(Math.abs(d)>50)go(i+(d<0?1:-1));x0=null;});
+go((parseInt(location.hash.slice(1))||1)-1);
+addEventListener('hashchange',()=>go((parseInt(location.hash.slice(1))||1)-1));
+</script>
+</body>
+</html>
