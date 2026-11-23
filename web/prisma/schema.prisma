@@ -1,0 +1,281 @@
+// Esquema único de la app (docs/PLAN.md §6.2).
+// MySQL: lat/lng como Decimal(9,6) (sin tipos espaciales), textos largos con @db.Text,
+// polígonos de barrios como Json (GeoJSON).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────── Enums ─────────
+
+enum Role {
+  CIUDADANO
+  OPERADOR_SALUD
+  OPERADOR_POLICIA
+  ANALISTA
+  ADMIN
+}
+
+enum Organismo {
+  SALUD
+  POLICIA
+}
+
+enum Categoria {
+  HOMICIDIO
+  LESIONES
+  VIOLENCIA_GENERO
+  VIOLENCIA_INTRAFAMILIAR
+  ABUSO_SEXUAL
+  ROBO
+  HURTO
+  HURTO_VEHICULO
+  ESTAFA_ONLINE
+}
+
+enum ModoTicket {
+  ANONIMO
+  CON_CONTACTO
+}
+
+enum RolReportante {
+  VICTIMA
+  TESTIGO
+}
+
+enum EstadoTicket {
+  NUEVO
+  CONTACTADO
+  DERIVADO
+  CERRADO
+}
+
+/// MADRUGADA 0-6 h, MANANA 6-12, TARDE 12-18, NOCHE 18-24
+enum Franja {
+  MADRUGADA
+  MANANA
+  TARDE
+  NOCHE
+}
+
+enum TipoServicio {
+  COMISARIA
+  CENTRO_SALUD
+  CAV
+  LINEA
+}
+
+enum CondicionRegla {
+  TENDENCIA_SUBA
+  PICO
+  TASA_SUPERA
+}
+
+// ───────── Modelos ─────────
+
+model User {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
+  passwordHash String
+  nombre       String
+  role         Role
+  organismo    Organismo?
+  activo       Boolean    @default(true)
+  barrioId     Int?
+  barrio       Barrio?    @relation(fields: [barrioId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  notas           NotaTicket[]
+  historial       HistorialEstado[]
+  accesosContacto AccesoContacto[]
+
+  @@index([barrioId])
+}
+
+model Barrio {
+  id        Int      @id @default(autoincrement())
+  nombre    String   @unique
+  localidad String   @default("San Salvador de Jujuy")
+  poblacion Int
+  /// GeoJSON (Polygon/MultiPolygon); MySQL se usa sin tipos espaciales
+  poligono  Json
+  centroLat Decimal  @db.Decimal(9, 6)
+  centroLng Decimal  @db.Decimal(9, 6)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarios   User[]
+  incidentes Incidente[]
+  tickets    Ticket[]
+  servicios  ServicioAsistencia[]
+}
+
+model CategoriaConfig {
+  id               Int       @id @default(autoincrement())
+  categoria        Categoria @unique
+  permiteAnonimo   Boolean
+  requiereContacto Boolean
+  derivaSalud      Boolean
+  derivaPolicia    Boolean
+  recursosUrgencia Json
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+/// Dato oficial (SNIC) o sintético; base de los mapas y estadísticas.
+model Incidente {
+  id        Int       @id @default(autoincrement())
+  categoria Categoria
+  fecha     DateTime
+  franja    Franja
+  lat       Decimal   @db.Decimal(9, 6)
+  lng       Decimal   @db.Decimal(9, 6)
+  barrioId  Int
+  barrio    Barrio    @relation(fields: [barrioId], references: [id])
+  fuente    String    @default("SNIC")
+  sintetico Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([categoria, fecha])
+  @@index([barrioId])
+}
+
+model Ticket {
+  id                  Int           @id @default(autoincrement())
+  categoria           Categoria
+  modo                ModoTicket
+  rolReportante       RolReportante
+  /// Fecha del hecho (no de la carga)
+  fecha               DateTime
+  franja              Franja
+  lat                 Decimal       @db.Decimal(9, 6)
+  lng                 Decimal       @db.Decimal(9, 6)
+  barrioId            Int
+  barrio              Barrio        @relation(fields: [barrioId], references: [id])
+  relato              String?       @db.Text
+  quiereDenunciar     Boolean       @default(false)
+  declaracionAceptada Boolean       @default(false)
+  estado              EstadoTicket  @default(NUEVO)
+  sintetico           Boolean       @default(false)
+  /// Baja lógica
+  deletedAt           DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  derivaciones    TicketDerivacion[]
+  contacto        ContactoTicket?
+  notas           NotaTicket[]
+  historial       HistorialEstado[]
+  accesosContacto AccesoContacto[]
+
+  @@index([categoria, fecha])
+  @@index([barrioId])
+  @@index([estado])
+}
+
+model TicketDerivacion {
+  id        Int       @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  organismo Organismo
+  createdAt DateTime  @default(now())
+
+  @@unique([ticketId, organismo])
+  @@index([organismo])
+}
+
+/// Datos de contacto del ciudadano (1:1). Los campos guardan texto CIFRADO, nunca en claro.
+model ContactoTicket {
+  id        Int       @id @default(autoincrement())
+  ticketId  Int       @unique
+  ticket    Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  nombre    String?   @db.Text
+  telefono  String?   @db.Text
+  email     String?   @db.Text
+  horario   String?   @db.Text
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model NotaTicket {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  autorId   Int
+  autor     User     @relation(fields: [autorId], references: [id])
+  texto     String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([autorId])
+}
+
+model HistorialEstado {
+  id       Int          @id @default(autoincrement())
+  ticketId Int
+  ticket   Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  de       EstadoTicket
+  a        EstadoTicket
+  autorId  Int
+  autor    User         @relation(fields: [autorId], references: [id])
+  fecha    DateTime     @default(now())
+
+  @@index([ticketId])
+  @@index([autorId])
+}
+
+/// Auditoría: quién descifró el contacto de un ticket y cuándo.
+model AccesoContacto {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  usuarioId Int
+  usuario   User     @relation(fields: [usuarioId], references: [id])
+  fecha     DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([usuarioId])
+}
+
+model ServicioAsistencia {
+  id        Int          @id @default(autoincrement())
+  nombre    String
+  tipo      TipoServicio
+  telefono  String
+  lat       Decimal?     @db.Decimal(9, 6)
+  lng       Decimal?     @db.Decimal(9, 6)
+  barrioId  Int?
+  barrio    Barrio?      @relation(fields: [barrioId], references: [id])
+  activo    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([barrioId])
+}
+
+model ReglaRecomendacion {
+  id        Int            @id @default(autoincrement())
+  categoria Categoria
+  franja    Franja?
+  condicion CondicionRegla
+  umbral    Decimal?       @db.Decimal(10, 2)
+  texto     String         @db.Text
+  activa    Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+/// Rate limit en BD: en Vercel (serverless) la memoria no se comparte entre instancias.
+model RateLimit {
+  /// Ej. "login:1.2.3.4"
+  clave         String   @id
+  ventanaInicio DateTime
+  contador      Int
+}

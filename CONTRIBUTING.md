@@ -33,16 +33,13 @@ fix(frontend): filtro de período no reiniciaba el mapa
 
 ## Verificación obligatoria (antes de pedir revisión)
 
-En cada app tocada:
+Dentro de `web/`:
 
-| App | Comandos que deben pasar |
-|---|---|
-| `backend/` | `npm run lint` · `npm run build` · `npm test` · `npx prisma validate` |
-| `frontend/` | `npm run lint` · `npm run typecheck` · `npm run build` |
+`npx prisma validate` · `npm run lint` · `npm run typecheck` · `npm test` · `npm run build`
 
 Además:
 - Si cambia el esquema Prisma, incluir la migración generada.
-- Si cambia la API, verificar que Swagger (`/api/docs`) refleje el cambio.
+- Si cambia la API, actualizar el esquema Zod correspondiente en `web/src/lib/schemas/`.
 - Si cambia la UI, probar en el navegador y adjuntar captura.
 - Checklist de privacidad: sin datos personales, sin incidentes individuales en endpoints públicos, umbral `MIN_COUNT` respetado.
 
@@ -60,7 +57,7 @@ Además:
 
 Settings → Branches → regla para `main`:
 - Require a pull request before merging (1 approval)
-- Require status checks to pass: `backend`, `frontend`
+- Require status checks to pass: `web`
 - Require branches to be up to date before merging
 - Require conversation resolution before merging
 - Allow only squash merging
