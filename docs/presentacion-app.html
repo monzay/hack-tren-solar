@@ -244,46 +244,46 @@ td:first-child{font-weight:600}
   <!-- 4. Informes agénticos -->
   <section class="slide">
     <div class="body">
-      <p class="eyebrow">Plus agéntico · Informes</p>
-      <h2>Del relato del vecino al informe para cada organismo.</h2>
+      <p class="eyebrow">Plus agéntico · Informes por evidencia</p>
+      <h2>Del ticket al informe, cuando los datos lo justifican.</h2>
       <div class="agent">
         <div class="card">
-          <p class="step">1 · Entrada</p><h3>Reporte ciudadano</h3>
-          <p>El agente recibe el relato y datos del hecho, nunca la identidad.</p>
+          <p class="step">1 · Recomendación</p><h3>Reglas sobre tickets agregados</h3>
+          <p>Una regla detecta el patrón por zona y franja.</p>
           <div class="mini">
-            <div><span class="chip">Relato</span><span class="chip">Categoría</span><span class="chip">Franja</span><span class="chip">Barrio</span></div>
-            <div><span class="chip off">Nombre</span><span class="chip off">Teléfono</span><span class="chip off">Punto exacto</span></div>
-            <div class="row" style="display:block;line-height:1.4;font-style:italic">“Me sacaron el celular en la parada de la 19, a la noche, eran dos en moto…”</div>
+            <div class="row" style="display:block;line-height:1.4"><strong>Reforzar el patrullaje nocturno</strong><br><span style="color:var(--muted-foreground)">Robo · Noche · +116% (umbral 20%)</span></div>
+            <div><span class="chip">Conteos</span><span class="chip">Franja</span><span class="chip">Barrio</span></div>
+            <div><span class="chip off">Relatos</span><span class="chip off">Contactos</span></div>
           </div>
         </div>
         <div class="arrow"><svg><use href="#arrow"/></svg></div>
         <div class="card">
-          <p class="step">2 · Agente</p><h3>Redacta y estructura</h3>
-          <p>Un modelo de lenguaje (p. ej. Claude Sonnet) extrae los hechos, resume y arma el informe según el organismo destino.</p>
+          <p class="step">2 · ¿Alcanza la evidencia?</p><h3>Por evidencia, no por calendario</h3>
+          <p>Ni diario ni mensual: sale cuando hay respaldo.</p>
           <div class="mini">
-            <div class="row"><span>Extraer hechos</span><span class="st d">Listo</span></div>
-            <div class="row"><span>Detectar datos faltantes</span><span class="st d">Listo</span></div>
-            <div class="row"><span>Redactar por organismo</span><span class="st c">En curso</span></div>
-            <div class="row"><span>Sugerir recursos de asistencia</span><span class="st n">Pendiente</span></div>
+            <div class="row"><span>Hechos que lo respaldan</span><span class="st d">48 / 30</span></div>
+            <div class="row"><span>Patrón sostenido</span><span class="st d">3 de 2 semanas</span></div>
+            <div class="row"><span>Sin informe igual reciente</span><span class="st d">hace 21 días</span></div>
+            <div class="row"><span>Estafa online (en observación)</span><span class="st c">12 / 30</span></div>
           </div>
         </div>
         <div class="arrow"><svg><use href="#arrow"/></svg></div>
         <div class="card">
-          <p class="step">3 · Salida</p><h3>Borrador para el operador</h3>
-          <div class="tabs" style="margin-top:10px"><span>Salud</span><span class="on">Policía</span></div>
+          <p class="step">3 · Agente redacta</p><h3>Informe para la entidad</h3>
+          <div class="tabs" style="margin-top:10px"><span class="on">Policía</span><span>Min. de Salud</span></div>
           <div class="doc">
-            <b>Resumen</b>Robo de celular en vía pública, dos personas en moto.
-            <b>Cuándo y dónde</b>Noche (18 a 24 h) · Barrio Centro, zona aproximada.
-            <b>Patrón en la zona</b>3.º reporte similar en 30 días.
-            <b>Falta confirmar</b>Hora exacta y si hubo lesiones.
+            <b>Hallazgo</b>Robos nocturnos en Centro: +116% en el último mes.
+            <b>Evidencia</b>48 hechos en 30 días · respaldo alto.
+            <b>Acciones sugeridas</b>Patrullaje preventivo visible de 18 a 24 h.
+            <b>Estado</b>Borrador · lo aprueba el analista.
           </div>
         </div>
       </div>
       <div class="guard">
-        <div><div class="ico" style="flex:none"><svg><use href="#check"/></svg></div><span><strong>Humano en el circuito</strong>El operador revisa y aprueba antes de derivar.</span></div>
-        <div><div class="ico" style="flex:none"><svg><use href="#lock"/></svg></div><span><strong>Sin datos personales</strong>El contacto cifrado nunca llega al modelo.</span></div>
-        <div><div class="ico" style="flex:none"><svg><use href="#scale"/></svg></div><span><strong>No juzga personas</strong>No decide culpas ni perfila: describe el hecho.</span></div>
-        <div><div class="ico" style="flex:none"><svg><use href="#spark"/></svg></div><span><strong>Trazable</strong>Cada informe guarda el modelo y la versión usados.</span></div>
+        <div><div class="ico" style="flex:none"><svg><use href="#check"/></svg></div><span><strong>Humano en el circuito</strong>El analista aprueba antes de enviar.</span></div>
+        <div><div class="ico" style="flex:none"><svg><use href="#lock"/></svg></div><span><strong>Solo datos agregados</strong>Nunca relatos, contactos ni puntos exactos.</span></div>
+        <div><div class="ico" style="flex:none"><svg><use href="#scale"/></svg></div><span><strong>Explicable</strong>Cada dato cita su regla; no perfila.</span></div>
+        <div><div class="ico" style="flex:none"><svg><use href="#spark"/></svg></div><span><strong>Trazable</strong>Guarda reglas, modelo y versión.</span></div>
       </div>
     </div>
   </section>
