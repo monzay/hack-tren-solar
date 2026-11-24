@@ -10,56 +10,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend:
+  web:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: web
+    env:
+      # prisma validate y generate solo necesitan una URL con formato válido.
+      # Cuando haya tests contra la base, agregar un servicio mysql:8.
+      DATABASE_URL: mysql://root:root@localhost:3306/jujuy
     steps:
       - uses: actions/checkout@v4
-      - id: exists
-        working-directory: .
-        run: echo "found=$([ -f backend/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-      - if: steps.exists.outputs.found == 'true'
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-          cache-dependency-path: backend/package-lock.json
-      - if: steps.exists.outputs.found == 'true'
-        run: npm ci
-      - if: steps.exists.outputs.found == 'true'
-        run: npx prisma validate && npx prisma generate
-        env:
-          DATABASE_URL: postgresql://user:pass@localhost:5432/db
-      - if: steps.exists.outputs.found == 'true'
-        run: npm run lint
-      - if: steps.exists.outputs.found == 'true'
-        run: npm run build
-      - if: steps.exists.outputs.found == 'true'
-        run: npm test
-
-  frontend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-      - id: exists
-        working-directory: .
-        run: echo "found=$([ -f frontend/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-      - if: steps.exists.outputs.found == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - if: steps.exists.outputs.found == 'true'
-        run: npm ci
-      - if: steps.exists.outputs.found == 'true'
-        run: npm run lint
-      - if: steps.exists.outputs.found == 'true'
-        run: npm run typecheck
-      - if: steps.exists.outputs.found == 'true'
-        run: npm run build
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx prisma validate
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

@@ -25,7 +25,7 @@ Un operador de Salud o de Policía ve los tickets derivados a su organismo, cont
 **Independent Test**: loguearse como `OPERADOR_POLICIA` y ver solo tickets de Policía, pasarlos de `NUEVO` a `CONTACTADO` y agregar una nota.
 
 **Acceptance Scenarios**:
-1. **Given** un ticket nuevo de `ROBO`, **Then** se deriva a `POLICIA` y los operadores conectados reciben una notificación en tiempo real (sin datos personales en el evento).
+1. **Given** un ticket nuevo de `ROBO`, **Then** se deriva a `POLICIA` y aparece en la bandeja de los operadores de Policía en menos de 5 segundos (polling), sin exponerlo a otros organismos.
 2. **Given** un ticket de `ABUSO_SEXUAL`, **Then** lo ven tanto `OPERADOR_SALUD` como `OPERADOR_POLICIA`.
 3. **Given** un `OPERADOR_SALUD`, **When** pide un ticket derivado solo a Policía, **Then** recibe un 403.
 
@@ -70,11 +70,11 @@ Un `CIUDADANO` registrado ve el análisis de toda la ciudad de San Salvador de J
 
 ## Success Criteria
 - **SC-001**: Reportar un hecho toma menos de 1 minuto.
-- **SC-002**: Ningún endpoint público ni evento de Socket.IO devuelve datos personales (cubierto por tests).
+- **SC-002**: Ningún endpoint público devuelve datos personales (cubierto por tests).
 - **SC-003**: El ticket aparece en el heatmap en menos de 5 segundos después de enviarse.
 - **SC-004**: Un operador solo ve los tickets de su organismo (cubierto por tests).
 
 ## Assumptions
 - Ministerio de Salud y Policía de Jujuy son operadores de demo, sin convenio real todavía.
 - Las empresas de seguridad quedan fuera de alcance (fase 2 del modelo de negocio).
-- Base de datos: MySQL 8 con Prisma. Entidades y orden de trabajo: `docs/PLAN.md` §6 y §7.
+- App única en Next.js 16 con Prisma 6 y MySQL 8. Entidades y orden de trabajo: `docs/PLAN.md` §6 y §7.
