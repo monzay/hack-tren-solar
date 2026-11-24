@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  rewrites: async () => [
+    { source: "/presentacion", destination: "/presentacion-app.html" },
+  ],
   turbopack: {
     rules: {
       "*.css": {
